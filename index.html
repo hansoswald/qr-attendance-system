@@ -6,6 +6,7 @@
 <title>QR Attendance System – EduTrack Pro</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -222,12 +223,17 @@ tbody td{padding:11px 14px;font-size:13.5px;vertical-align:middle}
   .sidebar{transform:translateX(-100%)}
   .sidebar.open{transform:none}
   .main{margin-left:0}
-  .grid-2,.grid-3,.form-row,.form-row.three{grid-template-columns:1fr}
+  .grid-2,.grid-3,.form-row,.form-row.three,.scan-grid{grid-template-columns:1fr!important}
   .stats-grid{grid-template-columns:1fr 1fr}
   .topbar h2{font-size:15px}
+  .scan-grid>div:nth-child(2){order:-1} /* Camera first on mobile */
 }
-.hamburger{display:none;background:none;border:none;color:var(--white);font-size:20px;cursor:pointer;margin-right:6px}
+.hamburger{display:none;background:none;border:none;color:var(--white);font-size:22px;cursor:pointer;margin-right:6px;padding:4px 8px;border-radius:6px;transition:.15s}
+.hamburger:hover{background:var(--navy3)}
 @media(max-width:768px){.hamburger{display:block}}
+/* Mobile sidebar overlay */
+#sidebarOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99;backdrop-filter:blur(2px)}
+#sidebarOverlay.open{display:block}
 </style>
 </head>
 <body>
@@ -264,6 +270,8 @@ tbody td{padding:11px 14px;font-size:13.5px;vertical-align:middle}
 
 <!-- ══════════ APP ══════════ -->
 <div id="app">
+  <!-- Mobile sidebar overlay -->
+  <div id="sidebarOverlay" onclick="closeSidebar()"></div>
   <!-- Sidebar -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
@@ -491,11 +499,23 @@ function navigate(page){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const ni=document.getElementById('nav-'+page);
   if(ni) ni.classList.add('active');
+  // Auto-close sidebar on mobile after navigation
+  if(window.innerWidth<=768) closeSidebar();
   renderPage(page);
 }
 
 function toggleSidebar(){
-  document.getElementById('sidebar').classList.toggle('open');
+  const sb=document.getElementById('sidebar');
+  const ov=document.getElementById('sidebarOverlay');
+  const isOpen=sb.classList.toggle('open');
+  ov.classList.toggle('open',isOpen);
+  // prevent body scroll when sidebar open on mobile
+  document.body.style.overflow=isOpen?'hidden':'';
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+  document.body.style.overflow='';
 }
 
 // ════════════════════════════════════════════
@@ -1181,7 +1201,7 @@ function pageScan(){
   const progs=getPrograms(),sems=getSemesters(),subjects=getSubjects();
   const progOpts=progs.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
   return `
-  <div class="grid-2" style="gap:20px;align-items:start">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start" class="scan-grid">
     <div>
       <div class="card mb-16">
         <div class="card-title" style="margin-bottom:14px">⚙️ Session Setup</div>
@@ -1214,9 +1234,9 @@ function pageScan(){
     <div>
       <div class="card mb-16">
         <div class="card-title" style="margin-bottom:14px">📷 QR Code Scanner</div>
-        <div id="scanner-area">
-          <video id="qr-video" autoplay playsinline></video>
-          <div class="scan-overlay" id="scanOverlay" style="display:none">
+        <div id="scanner-area" style="position:relative;width:100%;border-radius:12px;overflow:hidden;background:#000;min-height:200px">
+          <video id="qr-video" autoplay playsinline muted style="width:100%;display:block;border-radius:12px"></video>
+          <div class="scan-overlay" id="scanOverlay" style="display:none;position:absolute;inset:0;display:none;align-items:center;justify-content:center;pointer-events:none;transition:background .3s">
             <div class="scan-frame">
               <div class="sf-tr"></div><div class="sf-bl"></div>
               <div class="scan-line"></div>
@@ -1224,7 +1244,7 @@ function pageScan(){
           </div>
         </div>
         <div id="scanResult" class="scan-result"></div>
-        <div style="margin-top:12px;font-size:12px;color:var(--muted);text-align:center" id="scanHint">Start a session to activate the camera</div>
+        <div style="margin-top:10px;font-size:12px;color:var(--muted);text-align:center;line-height:1.5" id="scanHint">Start a session to activate the camera</div>
       </div>
     </div>
   </div>
@@ -1259,6 +1279,7 @@ function startSession(){
   const progId=parseInt(document.getElementById('scanProg').value);
   const semId=parseInt(document.getElementById('scanSem').value);
   const subjId=parseInt(document.getElementById('scanSubj').value);
+  if(!progId||!semId||!subjId){alert('Please select Program, Semester and Subject first.');return;}
   activeSession={progId,semId,subjId,sessionId:'SES'+Date.now(),records:[]};
   document.getElementById('si_prog').textContent=progName(progId);
   document.getElementById('si_sem').textContent=semName(semId);
@@ -1269,62 +1290,105 @@ function startSession(){
   document.getElementById('startBtn').style.display='none';
   document.getElementById('endBtn').style.display='inline-flex';
   document.getElementById('sessionListCard').style.display='block';
-  document.getElementById('scanHint').textContent='Scanning active — point QR code at camera';
+  // Reset last scan debounce for new session
+  lastScan='';lastScanTime=0;
   startCamera();
 }
 
 function endSession(){
   stopCamera();
   activeSession=null;
+  lastScan='';lastScanTime=0;
+  const overlay=document.getElementById('scanOverlay');
+  if(overlay) overlay.style.display='none';
   document.getElementById('sessionInfoDiv').style.display='none';
   document.getElementById('startBtn').style.display='inline-flex';
   document.getElementById('endBtn').style.display='none';
   document.getElementById('sessionListCard').style.display='none';
   document.getElementById('scanHint').textContent='Start a session to activate the camera';
-  document.getElementById('scanOverlay').style.display='none';
-  showScanResult('Session ended successfully. Attendance saved.','success');
+  showScanResult('✅ Session ended successfully. Attendance saved.','success');
 }
 
 function startCamera(){
   const video=document.getElementById('qr-video');
-  document.getElementById('scanOverlay').style.display='flex';
-  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}).then(stream=>{
-    cameraStream=stream;video.srcObject=stream;video.play();
-    startQRDetection(video);
-  }).catch(()=>{
-    document.getElementById('scanHint').textContent='📷 Camera not available — use manual input below';
-    addManualScanInput();
-  });
-}
-function stopCamera(){
-  if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}
-  if(scanInterval){clearInterval(scanInterval);scanInterval=null;}
+  const overlay=document.getElementById('scanOverlay');
+  // Show the scanning overlay frame
+  if(overlay) overlay.style.display='flex';
+  document.getElementById('scanHint').textContent='📷 Requesting camera access…';
+
+  const constraints={
+    video:{
+      facingMode:{ideal:'environment'},
+      width:{ideal:1280},
+      height:{ideal:720}
+    }
+  };
+
+  navigator.mediaDevices.getUserMedia(constraints)
+    .then(stream=>{
+      cameraStream=stream;
+      video.srcObject=stream;
+      video.setAttribute('playsinline','true');
+      video.play();
+      video.addEventListener('loadedmetadata',()=>{
+        document.getElementById('scanHint').textContent='✅ Camera active — hold QR code steady inside the frame';
+        beginQRLoop(video);
+      },{once:true});
+    })
+    .catch(err=>{
+      console.warn('Camera error:',err);
+      document.getElementById('scanOverlay').style.display='none';
+      document.getElementById('scanHint').textContent='📷 Camera unavailable — use manual input below';
+      addManualScanInput();
+    });
 }
 
-function startQRDetection(video){
-  // Using canvas-based QR detection via jsQR
-  const script=document.createElement('script');
-  script.src='https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js';
-  script.onload=()=>{
-    const canvas=document.createElement('canvas');
-    const ctx=canvas.getContext('2d');
-    scanInterval=setInterval(()=>{
-      if(!video.videoWidth||!activeSession) return;
-      canvas.width=video.videoWidth;canvas.height=video.videoHeight;
-      ctx.drawImage(video,0,0);
-      const imgData=ctx.getImageData(0,0,canvas.width,canvas.height);
-      const code=jsQR(imgData.data,imgData.width,imgData.height);
-      if(code) processScannedQR(code.data);
-    },500);
-  };
-  document.head.appendChild(script);
+function stopCamera(){
+  if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}
+  if(scanInterval){cancelAnimationFrame(scanInterval);scanInterval=null;}
+  // Also stop video element
+  const video=document.getElementById('qr-video');
+  if(video){video.srcObject=null;}
+}
+
+function beginQRLoop(video){
+  const canvas=document.createElement('canvas');
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+
+  function tick(){
+    if(!activeSession){return;} // stop if session ended
+    if(video.readyState===video.HAVE_ENOUGH_DATA && video.videoWidth>0){
+      canvas.width=video.videoWidth;
+      canvas.height=video.videoHeight;
+      ctx.drawImage(video,0,0,canvas.width,canvas.height);
+      try{
+        const imgData=ctx.getImageData(0,0,canvas.width,canvas.height);
+        // jsQR is now loaded in <head>, available globally
+        if(typeof jsQR==='function'){
+          const code=jsQR(imgData.data,imgData.width,imgData.height,{inversionAttempts:'dontInvert'});
+          if(code && code.data){
+            processScannedQR(code.data);
+          }
+        }
+      }catch(e){/* ignore frame errors */}
+    }
+    scanInterval=requestAnimationFrame(tick);
+  }
+  scanInterval=requestAnimationFrame(tick);
 }
 
 let lastScan='';let lastScanTime=0;
 function processScannedQR(data){
   const now=Date.now();
+  // Debounce: same QR within 3 seconds = ignore
   if(data===lastScan&&now-lastScanTime<3000) return;
   lastScan=data;lastScanTime=now;
+  // Flash the scan overlay green to give visual feedback
+  const overlay=document.getElementById('scanOverlay');
+  if(overlay){
+    overlay.style.background='rgba(0,197,163,0.15)';
+    setTimeout(()=>{overlay.style.background='';},300);
+  }
   recordAttendanceFromQR(data);
 }
 
