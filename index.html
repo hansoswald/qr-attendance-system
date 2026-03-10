@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR Attendance System – EduTrack Pro</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #0f1c2e;
+  --navy2: #162033;
+  --navy3: #1e2d44;
+  --navy4: #243352;
+  --teal: #00c5a3;
+  --teal2: #00e5bf;
+  --amber: #f5a623;
+  --rose: #ff4f6d;
+  --sky: #3ecfff;
+  --white: #f0f4fa;
+  --muted: #7a8eab;
+  --card: #182336;
+  --border: rgba(255,255,255,0.07);
+  --shadow: 0 8px 32px rgba(0,0,0,0.35);
+  --radius: 14px;
+  --sidebar-w: 240px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{font-size:15px}
+body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);min-height:100vh;overflow-x:hidden}
+
+/* ── LOGIN ── */
+#loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--navy);position:relative;overflow:hidden}
+#loginScreen::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 60% 30%,rgba(0,197,163,.12),transparent),radial-gradient(ellipse 50% 50% at 20% 80%,rgba(62,207,255,.08),transparent)}
+.login-box{background:var(--card);border:1px solid var(--border);border-radius:24px;padding:48px 44px;width:440px;max-width:95vw;box-shadow:var(--shadow);position:relative;z-index:1}
+.login-logo{display:flex;align-items:center;gap:12px;margin-bottom:36px}
+.login-logo .logo-mark{width:44px;height:44px;background:linear-gradient(135deg,var(--teal),var(--sky));border-radius:12px;display:grid;place-items:center;font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#fff}
+.login-logo h1{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;letter-spacing:-0.5px}
+.login-logo span{display:block;font-size:11px;color:var(--muted);font-weight:400;letter-spacing:.5px;text-transform:uppercase}
+.login-tabs{display:flex;gap:4px;background:var(--navy3);border-radius:10px;padding:4px;margin-bottom:28px}
+.ltab{flex:1;padding:8px;text-align:center;border-radius:7px;cursor:pointer;font-weight:500;font-size:13px;color:var(--muted);transition:all .2s}
+.ltab.active{background:var(--teal);color:#fff}
+.form-group{margin-bottom:18px}
+.form-group label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;font-weight:500}
+.form-group input{width:100%;background:var(--navy3);border:1px solid var(--border);border-radius:9px;padding:11px 14px;color:var(--white);font-size:14px;outline:none;transition:border .2s;font-family:'DM Sans',sans-serif}
+.form-group input:focus{border-color:var(--teal)}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:11px 22px;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .18s;text-decoration:none}
+.btn-primary{background:linear-gradient(135deg,var(--teal),var(--sky));color:#fff}
+.btn-primary:hover{opacity:.88;transform:translateY(-1px)}
+.btn-full{width:100%;justify-content:center}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--white)}
+.btn-outline:hover{border-color:var(--teal);color:var(--teal)}
+.btn-danger{background:linear-gradient(135deg,var(--rose),#c0392b);color:#fff}
+.btn-danger:hover{opacity:.85}
+.btn-amber{background:linear-gradient(135deg,var(--amber),#e8920a);color:#fff}
+.btn-sm{padding:7px 14px;font-size:12px;border-radius:7px}
+.err-msg{background:rgba(255,79,109,.12);border:1px solid rgba(255,79,109,.3);color:var(--rose);padding:9px 13px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none}
+
+/* ── APP SHELL ── */
+#app{display:none;min-height:100vh}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sidebar-w);background:var(--navy2);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100;transition:transform .3s}
+.sidebar-header{padding:20px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.s-logo{width:36px;height:36px;background:linear-gradient(135deg,var(--teal),var(--sky));border-radius:9px;display:grid;place-items:center;font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:#fff;flex-shrink:0}
+.s-title{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;line-height:1.1}
+.s-sub{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.sidebar-nav{flex:1;overflow-y:auto;padding:12px 10px}
+.nav-section{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:12px 10px 5px;font-weight:600}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13.5px;color:var(--muted);transition:all .18s;margin-bottom:2px}
+.nav-item:hover{background:var(--navy3);color:var(--white)}
+.nav-item.active{background:rgba(0,197,163,.12);color:var(--teal);font-weight:600}
+.nav-item .ni{width:18px;text-align:center;flex-shrink:0}
+.sidebar-footer{padding:14px;border-top:1px solid var(--border)}
+.user-chip{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;background:var(--navy3)}
+.user-av{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--teal),var(--sky));display:grid;place-items:center;font-weight:700;font-size:13px;color:#fff;flex-shrink:0}
+.user-info{flex:1;min-width:0}
+.user-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-role{font-size:10px;color:var(--teal);text-transform:uppercase;letter-spacing:.5px}
+.logout-btn{cursor:pointer;color:var(--muted);font-size:14px;padding:4px;border-radius:5px;transition:.15s}
+.logout-btn:hover{color:var(--rose)}
+.main{margin-left:var(--sidebar-w);min-height:100vh;display:flex;flex-direction:column}
+.topbar{height:58px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 26px;gap:14px;background:rgba(15,28,46,.8);backdrop-filter:blur(12px);position:sticky;top:0;z-index:50}
+.topbar h2{font-family:'Syne',sans-serif;font-weight:700;font-size:17px;flex:1}
+.badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.badge-teal{background:rgba(0,197,163,.15);color:var(--teal)}
+.badge-amber{background:rgba(245,166,35,.15);color:var(--amber)}
+.badge-rose{background:rgba(255,79,109,.15);color:var(--rose)}
+.badge-sky{background:rgba(62,207,255,.15);color:var(--sky)}
+.content{flex:1;padding:26px;overflow-y:auto}
+.page{display:none}
+.page.active{display:block}
+
+/* ── CARDS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:-40px;right:-40px;width:100px;height:100px;border-radius:50%;opacity:.07}
+.stat-card.teal::before{background:var(--teal)}
+.stat-card.sky::before{background:var(--sky)}
+.stat-card.amber::before{background:var(--amber)}
+.stat-card.rose::before{background:var(--rose)}
+.stat-icon{width:38px;height:38px;border-radius:9px;display:grid;place-items:center;font-size:18px;margin-bottom:12px}
+.stat-card.teal .stat-icon{background:rgba(0,197,163,.15);color:var(--teal)}
+.stat-card.sky .stat-icon{background:rgba(62,207,255,.15);color:var(--sky)}
+.stat-card.amber .stat-icon{background:rgba(245,166,35,.15);color:var(--amber)}
+.stat-card.rose .stat-icon{background:rgba(255,79,109,.15);color:var(--rose)}
+.stat-val{font-family:'Syne',sans-serif;font-weight:800;font-size:28px;line-height:1}
+.stat-label{font-size:12px;color:var(--muted);margin-top:4px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:22px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:12px;flex-wrap:wrap}
+.card-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px}
+
+/* ── TABLE ── */
+.table-wrap{overflow-x:auto;border-radius:10px}
+table{width:100%;border-collapse:collapse}
+thead th{background:var(--navy3);padding:10px 14px;text-align:left;font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);white-space:nowrap}
+thead th:first-child{border-radius:8px 0 0 8px}
+thead th:last-child{border-radius:0 8px 8px 0}
+tbody tr{border-bottom:1px solid var(--border);transition:.15s}
+tbody tr:hover{background:rgba(255,255,255,.025)}
+tbody td{padding:11px 14px;font-size:13.5px;vertical-align:middle}
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+
+/* ── FORM ELEMENTS ── */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.form-row.three{grid-template-columns:1fr 1fr 1fr}
+.form-row.single{grid-template-columns:1fr}
+.fg{margin-bottom:0}
+.fg label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px;font-weight:500}
+.fg input,.fg select,.fg textarea{width:100%;background:var(--navy3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--white);font-size:13.5px;outline:none;transition:border .2s;font-family:'DM Sans',sans-serif}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--teal)}
+.fg select option{background:var(--navy3)}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-backdrop.open{display:flex}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:28px;width:560px;max-width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.modal-title{font-family:'Syne',sans-serif;font-weight:700;font-size:17px;margin-bottom:22px;display:flex;align-items:center;gap:10px}
+.modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;padding-top:18px;border-top:1px solid var(--border)}
+
+/* ── QR SCANNER ── */
+#scanner-area{position:relative;width:100%;max-width:480px;margin:0 auto}
+#qr-video{width:100%;border-radius:12px;display:block;background:#000}
+.scan-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.scan-frame{width:220px;height:220px;position:relative}
+.scan-frame::before,.scan-frame::after{content:'';position:absolute;width:40px;height:40px;border-color:var(--teal);border-style:solid}
+.scan-frame::before{top:0;left:0;border-width:3px 0 0 3px;border-radius:4px 0 0 0}
+.scan-frame::after{bottom:0;right:0;border-width:0 3px 3px 0;border-radius:0 0 4px 0}
+.sf-tr,.sf-bl{position:absolute;width:40px;height:40px;border-color:var(--teal);border-style:solid}
+.sf-tr{top:0;right:0;border-width:3px 3px 0 0;border-radius:0 4px 0 0}
+.sf-bl{bottom:0;left:0;border-width:0 0 3px 3px;border-radius:0 0 0 4px}
+.scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--teal),transparent);animation:scanLine 2.5s ease-in-out infinite}
+@keyframes scanLine{0%,100%{top:10%}50%{top:90%}}
+.scan-result{padding:14px 18px;border-radius:10px;margin-top:14px;display:none;font-weight:500;font-size:14px;animation:slideIn .3s ease}
+.scan-result.success{background:rgba(0,197,163,.12);border:1px solid rgba(0,197,163,.3);color:var(--teal)}
+.scan-result.error{background:rgba(255,79,109,.12);border:1px solid rgba(255,79,109,.3);color:var(--rose)}
+@keyframes slideIn{from{transform:translateY(-8px);opacity:0}to{transform:none;opacity:1}}
+
+/* ── ATTENDANCE ── */
+.session-info{background:linear-gradient(135deg,rgba(0,197,163,.08),rgba(62,207,255,.05));border:1px solid rgba(0,197,163,.2);border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;gap:20px;flex-wrap:wrap}
+.si-item{display:flex;flex-direction:column;gap:2px}
+.si-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.si-val{font-weight:600;font-size:14px;color:var(--white)}
+
+/* ── PROGRESS BAR ── */
+.prog-bar{height:6px;background:var(--navy3);border-radius:3px;overflow:hidden;margin-top:6px}
+.prog-fill{height:100%;border-radius:3px;transition:width .4s}
+.prog-fill.green{background:var(--teal)}
+.prog-fill.amber{background:var(--amber)}
+.prog-fill.red{background:var(--rose)}
+
+/* ── QR ID CARD ── */
+.qr-card{background:#fff;color:#1a1a2e;border-radius:12px;padding:16px;width:240px;box-shadow:0 4px 16px rgba(0,0,0,.3);text-align:center;font-family:'Syne',sans-serif}
+.qr-card .school-name{font-size:9px;font-weight:700;color:#0f5fa8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.qr-card .student-name{font-size:13px;font-weight:800;margin:6px 0 2px;color:#0f1c2e}
+.qr-card .student-id{font-size:10px;color:#555;font-weight:600;font-family:'DM Sans',sans-serif}
+.qr-card .program-info{font-size:9px;color:#777;margin-bottom:10px;font-family:'DM Sans',sans-serif}
+.qr-card .qr-wrap{display:flex;justify-content:center;margin:8px 0}
+.qr-card .card-stripe{height:5px;background:linear-gradient(90deg,#0f5fa8,#00c5a3);border-radius:0 0 6px 6px;margin:-16px -16px 0;margin-top:10px}
+
+/* ── CHART ── */
+.chart-bar-wrap{display:flex;flex-direction:column;gap:10px}
+.cbar-row{display:flex;align-items:center;gap:10px}
+.cbar-label{font-size:12px;color:var(--muted);width:120px;text-align:right;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cbar-outer{flex:1;height:22px;background:var(--navy3);border-radius:5px;overflow:hidden}
+.cbar-inner{height:100%;border-radius:5px;transition:width .6s;display:flex;align-items:center;padding-left:8px;font-size:11px;font-weight:600;color:#fff;min-width:30px}
+.cbar-pct{font-size:12px;font-weight:600;width:42px;text-align:right;flex-shrink:0}
+
+/* ── ALERTS ── */
+.alert{padding:12px 16px;border-radius:9px;font-size:13px;margin-bottom:10px}
+.alert-warning{background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.25);color:var(--amber)}
+.alert-danger{background:rgba(255,79,109,.1);border:1px solid rgba(255,79,109,.25);color:var(--rose)}
+.alert-success{background:rgba(0,197,163,.1);border:1px solid rgba(0,197,163,.25);color:var(--teal)}
+.alert-info{background:rgba(62,207,255,.1);border:1px solid rgba(62,207,255,.25);color:var(--sky)}
+
+/* ── MISC ── */
+.empty-state{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty-state .es-icon{font-size:48px;margin-bottom:12px}
+.empty-state p{font-size:14px}
+.search-bar{display:flex;align-items:center;gap:10px;background:var(--navy3);border:1px solid var(--border);border-radius:8px;padding:8px 14px;flex:1;max-width:300px}
+.search-bar input{background:none;border:none;outline:none;color:var(--white);font-size:13.5px;flex:1;font-family:'DM Sans',sans-serif}
+.filter-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.pill-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+.pill-tab{padding:6px 16px;border-radius:20px;cursor:pointer;font-size:12.5px;font-weight:500;background:var(--navy3);color:var(--muted);border:1px solid var(--border);transition:.2s}
+.pill-tab.active{background:rgba(0,197,163,.12);color:var(--teal);border-color:rgba(0,197,163,.3)}
+.divider{height:1px;background:var(--border);margin:20px 0}
+.text-teal{color:var(--teal)}
+.text-amber{color:var(--amber)}
+.text-rose{color:var(--rose)}
+.text-muted{color:var(--muted)}
+.fw-600{font-weight:600}
+.mt-16{margin-top:16px}
+.mb-16{margin-bottom:16px}
+.flex{display:flex}
+.items-center{align-items:center}
+.gap-10{gap:10px}
+.gap-14{gap:14px}
+.flex-wrap{flex-wrap:wrap}
+.flex-1{flex:1}
+.justify-between{justify-content:space-between}
+
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:none}
+  .main{margin-left:0}
+  .grid-2,.grid-3,.form-row,.form-row.three{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .topbar h2{font-size:15px}
+}
+.hamburger{display:none;background:none;border:none;color:var(--white);font-size:20px;cursor:pointer;margin-right:6px}
+@media(max-width:768px){.hamburger{display:block}}
+</style>
+</head>
+<body>
+
+<!-- ══════════ LOGIN ══════════ -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="logo-mark">ET</div>
+      <div>
+        <h1>EduTrack Pro</h1>
+        <span>QR Attendance Management</span>
+      </div>
+    </div>
+    <div class="login-tabs">
+      <div class="ltab active" onclick="switchLoginTab('admin')">Admin</div>
+      <div class="ltab" onclick="switchLoginTab('teacher')">Teacher</div>
+    </div>
+    <div id="loginErr" class="err-msg">Invalid credentials. Please try again.</div>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="loginUser" placeholder="Enter username">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="Enter password">
+    </div>
+    <button class="btn btn-primary btn-full" onclick="doLogin()">Sign In →</button>
+    <div style="margin-top:16px;font-size:12px;color:var(--muted);text-align:center">
+      Demo — Admin: <strong>admin/admin123</strong> | Teacher: <strong>teacher/teach123</strong>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ APP ══════════ -->
+<div id="app">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="s-logo">ET</div>
+      <div>
+        <div class="s-title">EduTrack</div>
+        <div class="s-sub">Pro System</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav" id="sidebarNav"></nav>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-av" id="sidebarAv">A</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebarName">Admin</div>
+          <div class="user-role" id="sidebarRole">Administrator</div>
+        </div>
+        <div class="logout-btn" onclick="doLogout()" title="Logout">⎋</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="topbar">
+      <button class="hamburger" onclick="toggleSidebar()">☰</button>
+      <h2 id="pageTitle">Dashboard</h2>
+      <div id="topbarBadge"></div>
+    </header>
+    <div class="content" id="contentArea">
+      <!-- pages injected here -->
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ MODAL ══════════ -->
+<div class="modal-backdrop" id="modalBackdrop" onclick="closeModal(event)">
+  <div class="modal" id="modalBox">
+    <div class="modal-title" id="modalTitle"></div>
+    <div id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════
+// DATA STORE (localStorage simulation)
+// ════════════════════════════════════════════
+const DB = {
+  get(k){try{return JSON.parse(localStorage.getItem('et_'+k))||null}catch{return null}},
+  set(k,v){localStorage.setItem('et_'+k,JSON.stringify(v))},
+  getOrDefault(k,def){return this.get(k)??def}
+};
+
+// Seed initial data
+function seedData(){
+  if(!DB.get('seeded')){
+    DB.set('users',[
+      {id:1,username:'admin',password:'admin123',role:'admin',name:'System Administrator',email:'admin@school.edu'},
+      {id:2,username:'teacher',password:'teach123',role:'teacher',name:'Mr. Ahmad Fauzi',email:'ahmad@school.edu',subjects:[]},
+      {id:3,username:'siti',password:'siti123',role:'teacher',name:'Ms. Siti Rahma',email:'siti@school.edu',subjects:[]},
+    ]);
+    DB.set('programs',[
+      {id:1,name:'Certificate',code:'CERT',semesters:2},
+      {id:2,name:'Diploma',code:'DIP',semesters:4}
+    ]);
+    DB.set('semesters',[
+      {id:1,programId:1,number:1,name:'Certificate Semester 1'},
+      {id:2,programId:1,number:2,name:'Certificate Semester 2'},
+      {id:3,programId:2,number:1,name:'Diploma Semester 1'},
+      {id:4,programId:2,number:2,name:'Diploma Semester 2'},
+      {id:5,programId:2,number:3,name:'Diploma Semester 3'},
+      {id:6,programId:2,number:4,name:'Diploma Semester 4'},
+    ]);
+    DB.set('subjects',[
+      {id:1,semesterId:1,name:'English Communication',code:'ENG101'},
+      {id:2,semesterId:1,name:'Mathematics Fundamentals',code:'MAT101'},
+      {id:3,semesterId:1,name:'Computer Basics',code:'COM101'},
+      {id:4,semesterId:1,name:'Islamic Studies',code:'ISL101'},
+      {id:5,semesterId:1,name:'Introduction to Business',code:'BUS101'},
+      {id:6,semesterId:2,name:'Business Communication',code:'ENG201'},
+      {id:7,semesterId:2,name:'Applied Mathematics',code:'MAT201'},
+      {id:8,semesterId:2,name:'Office Applications',code:'COM201'},
+      {id:9,semesterId:2,name:'Ethics & Professionalism',code:'ETH201'},
+      {id:10,semesterId:2,name:'Entrepreneurship',code:'BUS201'},
+      {id:11,semesterId:3,name:'Technical English',code:'ENG301'},
+      {id:12,semesterId:3,name:'Calculus I',code:'MAT301'},
+      {id:13,semesterId:3,name:'Programming Fundamentals',code:'PRG301'},
+      {id:14,semesterId:3,name:'Database Systems',code:'DAT301'},
+      {id:15,semesterId:3,name:'Networking Basics',code:'NET301'},
+      {id:16,semesterId:4,name:'Advanced English',code:'ENG401'},
+      {id:17,semesterId:4,name:'Statistics',code:'MAT401'},
+      {id:18,semesterId:4,name:'Web Development',code:'WEB401'},
+      {id:19,semesterId:4,name:'System Analysis',code:'SYS401'},
+      {id:20,semesterId:4,name:'Project Management',code:'MGT401'},
+      {id:21,semesterId:5,name:'Report Writing',code:'ENG501'},
+      {id:22,semesterId:5,name:'Advanced Statistics',code:'MAT501'},
+      {id:23,semesterId:5,name:'Software Engineering',code:'SWE501'},
+      {id:24,semesterId:5,name:'Mobile Development',code:'MOB501'},
+      {id:25,semesterId:5,name:'Cloud Computing',code:'CLD501'},
+      {id:26,semesterId:6,name:'Technical Writing',code:'ENG601'},
+      {id:27,semesterId:6,name:'Research Methods',code:'RES601'},
+      {id:28,semesterId:6,name:'Final Year Project I',code:'FYP601'},
+      {id:29,semesterId:6,name:'Enterprise Systems',code:'ENT601'},
+      {id:30,semesterId:6,name:'IT Governance',code:'ITG601'},
+    ]);
+    // Sample students
+    const students = [];
+    const sampleNames = ['Ali Hassan','Siti Aminah','Mohd Faiz','Nurul Aina','Ahmad Zaki','Fatimah Zara','Haziq Irfan','Nadhira Hani','Izzat Razin','Maisarah Lina','Khairul Azwan','Nabilah Syuhada','Firdaus Hakim','Zulaikha Nisa','Harith Danial'];
+    let sid=1;
+    for(let s=1;s<=6;s++){
+      for(let i=0;i<15;i++){
+        const prog = s<=2?1:2;
+        const progCode = s<=2?'CERT':'DIP';
+        students.push({
+          id:sid,
+          studentId:`${progCode}2024${String(sid).padStart(3,'0')}`,
+          name:sampleNames[i%sampleNames.length]+' '+(s>2?'(D)':'(C)'),
+          email:`student${sid}@school.edu`,
+          phone:'01'+Math.floor(100000000+Math.random()*900000000),
+          programId:prog,
+          semesterId:s,
+          dob:'2004-0'+(1+i%9)+'-'+(10+i%20),
+          ic:String(Math.floor(100000000000+Math.random()*900000000000)),
+          address:'Jalan Contoh '+sid+', Bandar Baru',
+          photo:''
+        });
+        sid++;
+      }
+    }
+    DB.set('students',students);
+    // Sample attendance
+    const records = [];
+    const today = new Date();
+    let rid=1;
+    for(let d=30;d>=0;d--){
+      const dt = new Date(today); dt.setDate(dt.getDate()-d);
+      const dateStr = dt.toISOString().split('T')[0];
+      if(dt.getDay()===0||dt.getDay()===6) continue; // skip weekends
+      [1,3].forEach(subjectId=>{
+        students.slice(0,20).forEach(st=>{
+          const subj = DB.get('subjects').find(s=>s.id===subjectId);
+          if(subj && subj.semesterId===st.semesterId){
+            if(Math.random()>0.15){
+              records.push({id:rid++,studentId:st.id,subjectId,semesterId:st.semesterId,programId:st.programId,date:dateStr,time:'08:30',status:'present',sessionId:'S'+d+subjectId});
+            }
+          }
+        });
+      });
+    }
+    DB.set('attendance',records);
+    DB.set('seeded',true);
+  }
+}
+
+// ════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════
+let currentUser = null;
+let currentLoginRole = 'admin';
+
+function switchLoginTab(role){
+  currentLoginRole = role;
+  document.querySelectorAll('.ltab').forEach((t,i)=>t.classList.toggle('active',i===(role==='admin'?0:1)));
+}
+
+function doLogin(){
+  const u=document.getElementById('loginUser').value.trim();
+  const p=document.getElementById('loginPass').value.trim();
+  const users = DB.getOrDefault('users',[]);
+  const user = users.find(x=>x.username===u&&x.password===p&&x.role===currentLoginRole);
+  if(!user){document.getElementById('loginErr').style.display='block';return;}
+  currentUser=user;
+  document.getElementById('loginErr').style.display='none';
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  initApp();
+}
+
+function doLogout(){
+  currentUser=null;
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('app').style.display='none';
+  document.getElementById('loginUser').value='';
+  document.getElementById('loginPass').value='';
+}
+
+// ════════════════════════════════════════════
+// APP INIT
+// ════════════════════════════════════════════
+const adminNav=[
+  {icon:'📊',label:'Dashboard',page:'dashboard'},
+  {icon:'🎓',label:'Programs & Semesters',page:'programs'},
+  {icon:'📚',label:'Subjects',page:'subjects'},
+  {icon:'👨‍🏫',label:'Teachers',page:'teachers'},
+  {icon:'👩‍🎓',label:'Students',page:'students'},
+  {icon:'📋',label:'Attendance Records',page:'attendance'},
+  {icon:'📈',label:'Reports & Analytics',page:'reports'},
+];
+const teacherNav=[
+  {icon:'🏠',label:'My Dashboard',page:'teacherDash'},
+  {icon:'📷',label:'Take Attendance',page:'scan'},
+  {icon:'📋',label:'My Sessions',page:'mySessions'},
+  {icon:'📊',label:'Attendance View',page:'myAttendance'},
+];
+
+function initApp(){
+  seedData();
+  const isAdmin = currentUser.role==='admin';
+  const navItems = isAdmin?adminNav:teacherNav;
+  const nav = document.getElementById('sidebarNav');
+  nav.innerHTML='<div class="nav-section">'+(isAdmin?'Administration':'Teaching')+'</div>';
+  navItems.forEach(item=>{
+    nav.innerHTML+=`<div class="nav-item" onclick="navigate('${item.page}')" id="nav-${item.page}">
+      <span class="ni">${item.icon}</span>${item.label}
+    </div>`;
+  });
+  document.getElementById('sidebarAv').textContent=currentUser.name[0];
+  document.getElementById('sidebarName').textContent=currentUser.name;
+  document.getElementById('sidebarRole').textContent=isAdmin?'Administrator':'Teacher';
+  navigate(isAdmin?'dashboard':'teacherDash');
+}
+
+function navigate(page){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const ni=document.getElementById('nav-'+page);
+  if(ni) ni.classList.add('active');
+  renderPage(page);
+}
+
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+// ════════════════════════════════════════════
+// PAGE ROUTER
+// ════════════════════════════════════════════
+function renderPage(page){
+  const ca=document.getElementById('contentArea');
+  const titles={dashboard:'Dashboard',programs:'Programs & Semesters',subjects:'Subjects Management',
+    teachers:'Teachers',students:'Students',attendance:'Attendance Records',reports:'Reports & Analytics',
+    teacherDash:'My Dashboard',scan:'Take Attendance (QR Scan)',mySessions:'My Sessions',myAttendance:'Attendance View'};
+  document.getElementById('pageTitle').textContent=titles[page]||page;
+  switch(page){
+    case 'dashboard': ca.innerHTML=pageDashboard(); attachDashEvents(); break;
+    case 'programs': ca.innerHTML=pagePrograms(); break;
+    case 'subjects': ca.innerHTML=pageSubjects(); break;
+    case 'teachers': ca.innerHTML=pageTeachers(); break;
+    case 'students': ca.innerHTML=pageStudents(); attachStudentEvents(); break;
+    case 'attendance': ca.innerHTML=pageAttendance(); break;
+    case 'reports': ca.innerHTML=pageReports(); attachReportEvents(); break;
+    case 'teacherDash': ca.innerHTML=pageTeacherDash(); break;
+    case 'scan': ca.innerHTML=pageScan(); attachScanEvents(); break;
+    case 'mySessions': ca.innerHTML=pageMySessions(); break;
+    case 'myAttendance': ca.innerHTML=pageMyAttendance(); break;
+    default: ca.innerHTML='<div class="empty-state"><div class="es-icon">🚧</div><p>Page under construction</p></div>';
+  }
+}
+
+// ════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════
+function getPrograms(){return DB.getOrDefault('programs',[])}
+function getSemesters(){return DB.getOrDefault('semesters',[])}
+function getSubjects(){return DB.getOrDefault('subjects',[])}
+function getStudents(){return DB.getOrDefault('students',[])}
+function getTeachers(){return DB.getOrDefault('users',[]).filter(u=>u.role==='teacher')}
+function getAttendance(){return DB.getOrDefault('attendance',[])}
+
+function progName(id){return getPrograms().find(p=>p.id===id)?.name||'-'}
+function semName(id){return getSemesters().find(s=>s.id===id)?.name||'-'}
+function subName(id){return getSubjects().find(s=>s.id===id)?.name||'-'}
+function subCode(id){return getSubjects().find(s=>s.id===id)?.code||'-'}
+
+function today(){return new Date().toISOString().split('T')[0]}
+function fmt(dt){return new Date(dt).toLocaleDateString('en-MY',{day:'2-digit',month:'short',year:'numeric'})}
+function timeNow(){return new Date().toLocaleTimeString('en-MY',{hour:'2-digit',minute:'2-digit'})}
+
+function pct(a,b){return b===0?0:Math.round((a/b)*100)}
+function progColor(p){return p>=75?'green':p>=50?'amber':'red'}
+
+// ════════════════════════════════════════════
+// DASHBOARD
+// ════════════════════════════════════════════
+function pageDashboard(){
+  const students=getStudents(),teachers=getTeachers(),att=getAttendance();
+  const todayAtt=att.filter(a=>a.date===today());
+  const uniqueToday=new Set(todayAtt.map(a=>a.studentId)).size;
+  const subjects=getSubjects();
+
+  // Attendance % per subject (last 30 days)
+  const subjectStats = subjects.slice(0,8).map(s=>{
+    const semStudents=students.filter(st=>st.semesterId===s.semesterId).length||1;
+    const days=new Set(att.filter(a=>a.subjectId===s.id).map(a=>a.date)).size||1;
+    const total=semStudents*days;
+    const present=att.filter(a=>a.subjectId===s.id&&a.status==='present').length;
+    return{name:s.name,pct:pct(present,total)};
+  });
+
+  // Low attendance students
+  const lowStudents=students.filter(st=>{
+    const subjIds=subjects.filter(s=>s.semesterId===st.semesterId).map(s=>s.id);
+    const total=subjIds.length*20;
+    const present=att.filter(a=>a.studentId===st.id&&a.status==='present').length;
+    return pct(present,total)<75;
+  }).slice(0,5);
+
+  const chartBars = subjectStats.map(s=>`
+    <div class="cbar-row">
+      <div class="cbar-label">${s.name.substring(0,20)}</div>
+      <div class="cbar-outer"><div class="cbar-inner ${progColor(s.pct)}" style="width:${s.pct}%;background:${s.pct>=75?'var(--teal)':s.pct>=50?'var(--amber)':'var(--rose)'}"></div></div>
+      <div class="cbar-pct" style="color:${s.pct>=75?'var(--teal)':s.pct>=50?'var(--amber)':'var(--rose)'}">${s.pct}%</div>
+    </div>`).join('');
+
+  const lowAlerts = lowStudents.length?lowStudents.map(st=>`
+    <div class="alert alert-warning" style="margin-bottom:8px">
+      ⚠️ <strong>${st.name}</strong> — ${semName(st.semesterId)} — Below 75% attendance
+    </div>`).join(''):'<div class="alert alert-success">✅ All students are above 75% attendance threshold</div>';
+
+  return `
+  <div class="stats-grid">
+    <div class="stat-card teal"><div class="stat-icon">👩‍🎓</div><div class="stat-val">${students.length}</div><div class="stat-label">Total Students</div></div>
+    <div class="stat-card sky"><div class="stat-icon">👨‍🏫</div><div class="stat-val">${teachers.length}</div><div class="stat-label">Total Teachers</div></div>
+    <div class="stat-card amber"><div class="stat-icon">✅</div><div class="stat-val">${uniqueToday}</div><div class="stat-label">Present Today</div></div>
+    <div class="stat-card rose"><div class="stat-icon">📚</div><div class="stat-val">${subjects.length}</div><div class="stat-label">Active Subjects</div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><div class="card-title">📊 Subject Attendance Rate</div></div>
+      <div class="chart-bar-wrap">${chartBars}</div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">⚠️ Low Attendance Alerts</div><span class="badge badge-amber">&lt;75%</span></div>
+      ${lowAlerts}
+      <div class="divider"></div>
+      <div class="card-title" style="margin-bottom:12px">📅 Today's Summary</div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap">
+        <div><div style="font-size:28px;font-weight:800;color:var(--teal)">${uniqueToday}</div><div class="text-muted" style="font-size:12px">Students Present</div></div>
+        <div><div style="font-size:28px;font-weight:800;color:var(--amber)">${students.length-uniqueToday}</div><div class="text-muted" style="font-size:12px">Students Absent</div></div>
+        <div><div style="font-size:28px;font-weight:800;color:var(--sky)">${new Set(todayAtt.map(a=>a.subjectId)).size}</div><div class="text-muted" style="font-size:12px">Sessions Today</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="card mt-16">
+    <div class="card-header"><div class="card-title">📋 Recent Attendance Activity</div><button class="btn btn-outline btn-sm" onclick="navigate('attendance')">View All</button></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Student</th><th>Subject</th><th>Semester</th><th>Date</th><th>Time</th><th>Status</th></tr></thead>
+        <tbody id="recentAttTbody">
+          ${getAttendance().slice(-15).reverse().map(a=>{
+            const st=getStudents().find(s=>s.id===a.studentId);
+            return `<tr>
+              <td><strong>${st?.name||'Unknown'}</strong><br><span class="text-muted" style="font-size:11px">${st?.studentId||''}</span></td>
+              <td>${subName(a.subjectId)}</td>
+              <td>${semName(a.semesterId)}</td>
+              <td>${fmt(a.date)}</td>
+              <td>${a.time}</td>
+              <td><span class="badge ${a.status==='present'?'badge-teal':'badge-rose'}">${a.status}</span></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+function attachDashEvents(){}
+
+// ════════════════════════════════════════════
+// PROGRAMS
+// ════════════════════════════════════════════
+function pagePrograms(){
+  const progs=getPrograms(),sems=getSemesters();
+  return `
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><div class="card-title">🎓 Programs</div></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Code</th><th>Name</th><th>Semesters</th></tr></thead>
+        <tbody>${progs.map(p=>`<tr><td><span class="badge badge-sky">${p.code}</span></td><td>${p.name}</td><td>${p.semesters}</td></tr>`).join('')}</tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">📅 Semesters</div></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>#</th><th>Semester</th><th>Program</th></tr></thead>
+        <tbody>${sems.map(s=>`<tr><td>${s.number}</td><td>${s.name}</td><td>${progName(s.programId)}</td></tr>`).join('')}</tbody>
+      </table></div>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════
+// SUBJECTS
+// ════════════════════════════════════════════
+function pageSubjects(){
+  const subjects=getSubjects(),sems=getSemesters();
+  const semOpts=sems.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  return `
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">📚 Subjects Management</div>
+      <div class="flex gap-10">
+        <select id="subFilter" class="fg" style="width:220px" onchange="filterSubjects()">
+          <option value="">All Semesters</option>${semOpts}
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="openAddSubject()">+ Add Subject</button>
+      </div>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Code</th><th>Subject Name</th><th>Semester</th><th>Program</th><th>Actions</th></tr></thead>
+      <tbody id="subjectsTbody">${renderSubjectsRows(getSubjects())}</tbody>
+    </table></div>
+  </div>`;
+}
+function renderSubjectsRows(subjects){
+  const filtered = subjects;
+  return filtered.map(s=>{
+    const sem=getSemesters().find(x=>x.id===s.semesterId);
+    return `<tr>
+      <td><span class="badge badge-sky">${s.code}</span></td>
+      <td><strong>${s.name}</strong></td>
+      <td>${sem?.name||'-'}</td>
+      <td>${progName(sem?.programId)}</td>
+      <td class="actions">
+        <button class="btn btn-outline btn-sm" onclick="editSubject(${s.id})">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteSubject(${s.id})">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+function filterSubjects(){
+  const fid=parseInt(document.getElementById('subFilter').value)||0;
+  const subs = fid?getSubjects().filter(s=>s.semesterId===fid):getSubjects();
+  document.getElementById('subjectsTbody').innerHTML=renderSubjectsRows(subs);
+}
+function openAddSubject(){
+  const sems=getSemesters();
+  openModal('Add Subject',`
+    <div class="form-row"><div class="fg"><label>Subject Name</label><input id="m_subName" placeholder="e.g. Calculus I"></div>
+    <div class="fg"><label>Subject Code</label><input id="m_subCode" placeholder="e.g. MAT301"></div></div>
+    <div class="fg"><label>Semester</label><select id="m_subSem">${sems.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}</select></div>
+  `,[
+    {label:'Cancel',cls:'btn-outline',fn:closeModal},
+    {label:'Add Subject',cls:'btn-primary',fn:()=>{
+      const subjects=getSubjects();
+      subjects.push({id:Date.now(),name:document.getElementById('m_subName').value,code:document.getElementById('m_subCode').value,semesterId:parseInt(document.getElementById('m_subSem').value)});
+      DB.set('subjects',subjects);closeModal();navigate('subjects');
+    }}
+  ]);
+}
+function editSubject(id){
+  const s=getSubjects().find(x=>x.id===id),sems=getSemesters();
+  openModal('Edit Subject',`
+    <div class="form-row"><div class="fg"><label>Subject Name</label><input id="m_subName" value="${s.name}"></div>
+    <div class="fg"><label>Subject Code</label><input id="m_subCode" value="${s.code}"></div></div>
+    <div class="fg"><label>Semester</label><select id="m_subSem">${sems.map(x=>`<option value="${x.id}" ${x.id===s.semesterId?'selected':''}>${x.name}</option>`).join('')}</select></div>
+  `,[
+    {label:'Cancel',cls:'btn-outline',fn:closeModal},
+    {label:'Save',cls:'btn-primary',fn:()=>{
+      const subjects=getSubjects().map(x=>x.id===id?{...x,name:document.getElementById('m_subName').value,code:document.getElementById('m_subCode').value,semesterId:parseInt(document.getElementById('m_subSem').value)}:x);
+      DB.set('subjects',subjects);closeModal();navigate('subjects');
+    }}
+  ]);
+}
+function deleteSubject(id){
+  if(confirm('Delete this subject?')){DB.set('subjects',getSubjects().filter(s=>s.id!==id));navigate('subjects');}
+}
+
+// ════════════════════════════════════════════
+// TEACHERS
+// ════════════════════════════════════════════
+function pageTeachers(){
+  const teachers=getTeachers();
+  return `<div class="card">
+    <div class="card-header"><div class="card-title">👨‍🏫 Teachers</div>
+    <button class="btn btn-primary btn-sm" onclick="openAddTeacher()">+ Add Teacher</button></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Actions</th></tr></thead>
+      <tbody>${teachers.map(t=>`<tr>
+        <td><strong>${t.name}</strong></td>
+        <td><span class="badge badge-sky">${t.username}</span></td>
+        <td>${t.email}</td>
+        <td class="actions">
+          <button class="btn btn-outline btn-sm" onclick="editTeacher(${t.id})">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteTeacher(${t.id})">🗑️</button>
+        </td>
+      </tr>`).join('')}</tbody>
+    </table></div>
+  </div>`;
+}
+function openAddTeacher(){
+  openModal('Add Teacher',`
+    <div class="form-row"><div class="fg"><label>Full Name</label><input id="m_tName" placeholder="Teacher name"></div>
+    <div class="fg"><label>Email</label><input id="m_tEmail" type="email" placeholder="teacher@school.edu"></div></div>
+    <div class="form-row"><div class="fg"><label>Username</label><input id="m_tUser" placeholder="username"></div>
+    <div class="fg"><label>Password</label><input id="m_tPass" type="password" placeholder="password"></div></div>
+  `,[
+    {label:'Cancel',cls:'btn-outline',fn:closeModal},
+    {label:'Add Teacher',cls:'btn-primary',fn:()=>{
+      const users=DB.getOrDefault('users',[]);
+      users.push({id:Date.now(),name:document.getElementById('m_tName').value,email:document.getElementById('m_tEmail').value,username:document.getElementById('m_tUser').value,password:document.getElementById('m_tPass').value,role:'teacher'});
+      DB.set('users',users);closeModal();navigate('teachers');
+    }}
+  ]);
+}
+function editTeacher(id){
+  const t=getTeachers().find(x=>x.id===id);
+  openModal('Edit Teacher',`
+    <div class="form-row"><div class="fg"><label>Full Name</label><input id="m_tName" value="${t.name}"></div>
+    <div class="fg"><label>Email</label><input id="m_tEmail" value="${t.email}"></div></div>
+    <div class="form-row"><div class="fg"><label>Username</label><input id="m_tUser" value="${t.username}"></div>
+    <div class="fg"><label>New Password</label><input id="m_tPass" type="password" placeholder="leave blank to keep"></div></div>
+  `,[
+    {label:'Cancel',cls:'btn-outline',fn:closeModal},
+    {label:'Save',cls:'btn-primary',fn:()=>{
+      const users=DB.getOrDefault('users',[]).map(x=>{
+        if(x.id!==id) return x;
+        const upd={...x,name:document.getElementById('m_tName').value,email:document.getElementById('m_tEmail').value,username:document.getElementById('m_tUser').value};
+        const np=document.getElementById('m_tPass').value;if(np) upd.password=np;
+        return upd;
+      });
+      DB.set('users',users);closeModal();navigate('teachers');
+    }}
+  ]);
+}
+function deleteTeacher(id){
+  if(confirm('Delete this teacher?')){DB.set('users',DB.getOrDefault('users',[]).filter(u=>u.id!==id));navigate('teachers');}
+}
+
+// ════════════════════════════════════════════
+// STUDENTS
+// ════════════════════════════════════════════
+function pageStudents(){
+  const students=getStudents(),sems=getSemesters(),progs=getPrograms();
+  return `<div class="card">
+    <div class="card-header flex flex-wrap gap-10" style="align-items:center">
+      <div class="card-title flex-1">👩‍🎓 Students (${students.length})</div>
+      <div class="search-bar"><span>🔍</span><input id="stuSearch" placeholder="Search by name or ID…" oninput="filterStudents()"></div>
+      <select id="stuProgFilter" class="fg" style="width:160px" onchange="filterStudents()">
+        <option value="">All Programs</option>${progs.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}
+      </select>
+      <select id="stuSemFilter" class="fg" style="width:180px" onchange="filterStudents()">
+        <option value="">All Semesters</option>${sems.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}
+      </select>
+      <button class="btn btn-outline btn-sm" onclick="openBulkUpload()">📤 Bulk Upload</button>
+      <button class="btn btn-primary btn-sm" onclick="openAddStudent()">+ Add Student</button>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Student ID</th><th>Name</th><th>Program</th><th>Semester</th><th>Email</th><th>Actions</th></tr></thead>
+      <tbody id="studentsTbody">${renderStudentRows(students)}</tbody>
+    </table></div>
+  </div>`;
+}
+function renderStudentRows(students){
+  return students.map(s=>`<tr>
+    <td><span class="badge badge-teal">${s.studentId}</span></td>
+    <td><strong>${s.name}</strong></td>
+    <td>${progName(s.programId)}</td>
+    <td>${semName(s.semesterId)}</td>
+    <td>${s.email}</td>
+    <td class="actions">
+      <button class="btn btn-outline btn-sm" onclick="viewStudentQR(${s.id})">🪪</button>
+      <button class="btn btn-outline btn-sm" onclick="editStudent(${s.id})">✏️</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteStudent(${s.id})">🗑️</button>
+    </td>
+  </tr>`).join('');
+}
+function filterStudents(){
+  const q=(document.getElementById('stuSearch').value||'').toLowerCase();
+  const pf=parseInt(document.getElementById('stuProgFilter').value)||0;
+  const sf=parseInt(document.getElementById('stuSemFilter').value)||0;
+  let arr=getStudents();
+  if(q) arr=arr.filter(s=>s.name.toLowerCase().includes(q)||s.studentId.toLowerCase().includes(q));
+  if(pf) arr=arr.filter(s=>s.programId===pf);
+  if(sf) arr=arr.filter(s=>s.semesterId===sf);
+  document.getElementById('studentsTbody').innerHTML=renderStudentRows(arr);
+}
+function attachStudentEvents(){}
+function openAddStudent(){
+  const sems=getSemesters(),progs=getPrograms();
+  openModal('Add Student',`
+    <div class="form-row"><div class="fg"><label>Full Name</label><input id="m_stName" placeholder="Student full name"></div>
+    <div class="fg"><label>Email</label><input id="m_stEmail" type="email" placeholder="student@email.com"></div></div>
+    <div class="form-row"><div class="fg"><label>Program</label><select id="m_stProg" onchange="updateSemOpts()">${progs.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</select></div>
+    <div class="fg"><label>Semester</label><select id="m_stSem">${sems.filter(s=>s.programId===1).map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}</select></div></div>
+    <div class="form-row"><div class="fg"><label>Phone</label><input id="m_stPhone" placeholder="01xxxxxxxx"></div>
+    <div class="fg"><label>IC/Passport</label><input id="m_stIC" placeholder="ID number"></div></div>
+    <div class="fg" style="margin-bottom:16px"><label>Address</label><input id="m_stAddr" placeholder="Home address"></div>
+  `,[
+    {label:'Cancel',cls:'btn-outline',fn:closeModal},
+    {label:'Register & Generate QR',cls:'btn-primary',fn:()=>{
+      const students=getStudents();
+      const prog=parseInt(document.getElementById('m_stProg').value);
+      const sem=parseInt(document.getElementById('m_stSem').value);
+      const progCode=getPrograms().find(p=>p.id===prog)?.code||'ST';
+      const newId=students.length?students[students.length-1].id+1:1;
+      const studentId=`${progCode}${new Date().getFullYear()}${String(newId).padStart(3,'0')}`;
+      students.push({id:newId,studentId,name:document.getElementById('m_stName').value,email:document.getElementById('m_stEmail').value,phone:document.getElementById('m_stPhone').value,ic:document.getElementById('m_stIC').value,address:document.getElementById('m_stAddr').value,programId:prog,semesterId:sem,photo:''});
+      DB.set('students',students);closeModal();navigate('students');
+    }}
+  ]);
+}
+function updateSemOpts(){
+  const pid=parseInt(document.getElementById('m_stProg').value);
+  const sems=getSemesters().filter(s=>s.programId===pid);
+  document.getElementById('m_stSem').innerHTML=sems.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+}
+function editStudent(id){
+  const s=getStudents().find(x=>x.id===id),progs=getPrograms(),sems=getSemesters();
+  openModal('Edit Student',`
+    <div class="form-row"><div class="fg"><label>Full Name</label><input id="m_stName" value="${s.name}"></div>
+    <div class="fg"><label>Email</label><input id="m_stEmail" value="${s.email}"></div></div>
+    <div class="form-row"><div class="fg"><label>Program</label><select id="m_stProg">${progs.map(p=>`<option value="${p.id}" ${p.id===s.programId?'selected':''}>${p.name}</option>`).join('')}</select></div>
+    <div class="fg"><label>Semester</label><select id="m_stSem">${sems.map(x=>`<option value="${x.id}" ${x.id===s.semesterId?'selected':''}>${x.name}</option>`).join('')}</select></div></div>
+    <div class="form-row"><div class="fg"><label>Phone</label><input id="m_stPhone" value="${s.phone||''}"></div>
+    <div class="fg"><label>IC/Passport</label><input id="m_stIC" value="${s.ic||''}"></div></div>
+  `,[
+    {label:'Cancel',cls:'btn-outline',fn:closeModal},
+    {label:'Save',cls:'btn-primary',fn:()=>{
+      const students=getStudents().map(x=>x.id===id?{...x,name:document.getElementById('m_stName').value,email:document.getElementById('m_stEmail').value,phone:document.getElementById('m_stPhone').value,ic:document.getElementById('m_stIC').value,programId:parseInt(document.getElementById('m_stProg').value),semesterId:parseInt(document.getElementById('m_stSem').value)}:x);
+      DB.set('students',students);closeModal();navigate('students');
+    }}
+  ]);
+}
+function deleteStudent(id){
+  if(confirm('Delete this student?')){DB.set('students',getStudents().filter(s=>s.id!==id));navigate('students');}
+}
+function viewStudentQR(id){
+  const s=getStudents().find(x=>x.id===id);
+  openModal('Student QR ID Card',`
+    <div style="display:flex;justify-content:center">
+      <div class="qr-card" id="qrCardPrint">
+        <div class="school-stripe" style="height:5px;background:linear-gradient(90deg,#0f5fa8,#00c5a3);margin:-16px -16px 10px"></div>
+        <div class="school-name">EduTrack Pro — Academic Institution</div>
+        <div style="margin:8px 0 6px;font-size:12px;font-weight:700;color:#0f5fa8;font-family:Syne,sans-serif">STUDENT ID CARD</div>
+        <div class="qr-wrap"><div id="modalQRDiv"></div></div>
+        <div class="student-name">${s.name}</div>
+        <div class="student-id">ID: ${s.studentId}</div>
+        <div class="program-info">${progName(s.programId)} — ${semName(s.semesterId)}</div>
+        <div class="card-stripe"></div>
+      </div>
+    </div>
+    <div style="margin-top:14px;text-align:center;font-size:12px;color:var(--muted)">QR encodes: <strong>${s.studentId}</strong></div>
+  `,[
+    {label:'Close',cls:'btn-outline',fn:closeModal},
+    {label:'🖨️ Print ID Card',cls:'btn-primary',fn:printIDCard}
+  ]);
+  setTimeout(()=>{
+    const div=document.getElementById('modalQRDiv');
+    if(div) new QRCode(div,{text:s.studentId,width:120,height:120,colorDark:'#0f1c2e',colorLight:'#ffffff'});
+  },100);
+}
+function printIDCard(){
+  const card=document.getElementById('qrCardPrint');
+  if(!card) return;
+  const w=window.open('','_blank','width=400,height=500');
+  w.document.write('<html><head><title>Print QR ID</title><style>body{margin:20px;display:flex;justify-content:center;font-family:sans-serif}</style></head><body>'+card.outerHTML+'</body></html>');
+  w.document.close();w.print();
+}
+function openBulkUpload(){
+  openModal('Bulk Student Upload (Excel)',`
+    <div class="alert alert-info">📋 Upload an Excel (.xlsx) file with columns: <strong>Name, Email, Phone, IC, Program (Certificate/Diploma), Semester (1-4)</strong></div>
+    <div class="fg" style="margin-top:14px"><label>Select Excel File</label><input type="file" id="bulkFile" accept=".xlsx,.csv" style="color:var(--white)"></div>
+    <div class="alert alert-warning" style="margin-top:12px">⚠️ Demo mode: Bulk upload simulates adding 5 sample students.</div>
+  `,[
+    {label:'Cancel',cls:'btn-outline',fn:closeModal},
+    {label:'Upload & Import',cls:'btn-primary',fn:()=>{
+      const students=getStudents();
+      const names=['Test Student A','Test Student B','Test Student C','Test Student D','Test Student E'];
+      let id=students.length?students[students.length-1].id+1:1;
+      names.forEach(n=>{
+        students.push({id:id++,studentId:`CERT2024${String(id).padStart(3,'0')}`,name:n,email:`test${id}@school.edu`,phone:'01199999'+id,ic:'',address:'',programId:1,semesterId:1,photo:''});
+      });
+      DB.set('students',students);closeModal();navigate('students');
+      alert('✅ 5 sample students imported successfully!');
+    }}
+  ]);
+}
+
+// ════════════════════════════════════════════
+// ATTENDANCE RECORDS (ADMIN)
+// ════════════════════════════════════════════
+function pageAttendance(){
+  const att=getAttendance(),sems=getSemesters(),subjects=getSubjects();
+  return `<div class="card">
+    <div class="card-header flex flex-wrap gap-10">
+      <div class="card-title">📋 Attendance Records (${att.length})</div>
+      <div class="flex gap-10 flex-wrap">
+        <input type="date" id="attDateFrom" value="${today()}" class="fg" style="width:150px" onchange="filterAtt()">
+        <input type="date" id="attDateTo" value="${today()}" class="fg" style="width:150px" onchange="filterAtt()">
+        <select id="attSemFilter" class="fg" style="width:180px" onchange="filterAtt()">
+          <option value="">All Semesters</option>${sems.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Student ID</th><th>Student Name</th><th>Subject</th><th>Semester</th><th>Date</th><th>Time</th><th>Status</th></tr></thead>
+      <tbody id="attTbody">${renderAttRows(att.slice(-50).reverse())}</tbody>
+    </table></div>
+  </div>`;
+}
+function renderAttRows(arr){
+  return arr.map(a=>{
+    const st=getStudents().find(s=>s.id===a.studentId);
+    return `<tr>
+      <td><span class="badge badge-teal">${st?.studentId||a.studentId}</span></td>
+      <td>${st?.name||'Unknown'}</td>
+      <td>${subName(a.subjectId)}</td>
+      <td>${semName(a.semesterId)}</td>
+      <td>${fmt(a.date)}</td>
+      <td>${a.time}</td>
+      <td><span class="badge ${a.status==='present'?'badge-teal':'badge-rose'}">${a.status}</span></td>
+    </tr>`;
+  }).join('');
+}
+function filterAtt(){
+  const from=document.getElementById('attDateFrom').value;
+  const to=document.getElementById('attDateTo').value;
+  const sf=parseInt(document.getElementById('attSemFilter').value)||0;
+  let arr=getAttendance();
+  if(from) arr=arr.filter(a=>a.date>=from);
+  if(to) arr=arr.filter(a=>a.date<=to);
+  if(sf) arr=arr.filter(a=>a.semesterId===sf);
+  document.getElementById('attTbody').innerHTML=renderAttRows(arr.slice(-100).reverse());
+}
+
+// ════════════════════════════════════════════
+// REPORTS
+// ════════════════════════════════════════════
+function pageReports(){
+  const sems=getSemesters(),progs=getPrograms();
+  return `
+  <div class="pill-tabs" id="reportTabs">
+    <div class="pill-tab active" onclick="switchReport('summary',this)">📊 Summary</div>
+    <div class="pill-tab" onclick="switchReport('subject',this)">📚 By Subject</div>
+    <div class="pill-tab" onclick="switchReport('student',this)">👩‍🎓 By Student</div>
+    <div class="pill-tab" onclick="switchReport('daily',this)">📅 Daily</div>
+  </div>
+  <div class="card">
+    <div class="card-header flex flex-wrap gap-10">
+      <div class="card-title" id="reportCardTitle">Attendance Summary</div>
+      <div class="flex gap-10 flex-wrap">
+        <input type="date" id="repFrom" value="${new Date(Date.now()-30*86400000).toISOString().split('T')[0]}">
+        <input type="date" id="repTo" value="${today()}">
+        <select id="repSem" style="background:var(--navy3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--white);outline:none">
+          <option value="">All Semesters</option>${sems.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="loadReport()">Generate</button>
+        <button class="btn btn-amber btn-sm" onclick="exportCSV()">⬇️ Export CSV</button>
+      </div>
+    </div>
+    <div id="reportBody"></div>
+  </div>`;
+}
+let currentReport='summary';
+function switchReport(type,el){
+  currentReport=type;
+  document.querySelectorAll('.pill-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const titles={summary:'Attendance Summary',subject:'Attendance by Subject',student:'Attendance by Student',daily:'Daily Attendance'};
+  document.getElementById('reportCardTitle').textContent=titles[type];
+  loadReport();
+}
+function loadReport(){
+  const from=document.getElementById('repFrom')?.value||'';
+  const to=document.getElementById('repTo')?.value||today();
+  const semF=parseInt(document.getElementById('repSem')?.value)||0;
+  let att=getAttendance();
+  if(from) att=att.filter(a=>a.date>=from);
+  if(to) att=att.filter(a=>a.date<=to);
+  if(semF) att=att.filter(a=>a.semesterId===semF);
+  const rb=document.getElementById('reportBody');
+  if(!rb) return;
+  switch(currentReport){
+    case 'summary': rb.innerHTML=reportSummary(att); break;
+    case 'subject': rb.innerHTML=reportBySubject(att); break;
+    case 'student': rb.innerHTML=reportByStudent(att); break;
+    case 'daily': rb.innerHTML=reportDaily(att); break;
+  }
+}
+function reportSummary(att){
+  const sems=getSemesters();
+  const rows=sems.map(s=>{
+    const semAtt=att.filter(a=>a.semesterId===s.id);
+    const semStudents=getStudents().filter(st=>st.semesterId===s.id).length;
+    const present=semAtt.filter(a=>a.status==='present').length;
+    const total=semAtt.length||1;
+    const p=pct(present,total);
+    return{s,semStudents,present,total,p};
+  });
+  return `<div class="table-wrap"><table>
+    <thead><tr><th>Semester</th><th>Program</th><th>Students</th><th>Present</th><th>Absent</th><th>Total Sessions</th><th>Attendance %</th></tr></thead>
+    <tbody>${rows.map(r=>`<tr>
+      <td>${r.s.name}</td><td>${progName(r.s.programId)}</td><td>${r.semStudents}</td>
+      <td class="text-teal fw-600">${r.present}</td>
+      <td class="text-rose fw-600">${r.total-r.present}</td>
+      <td>${r.total}</td>
+      <td><div style="display:flex;align-items:center;gap:8px">
+        <div class="prog-bar" style="width:80px"><div class="prog-fill ${progColor(r.p)}" style="width:${r.p}%;background:${r.p>=75?'var(--teal)':r.p>=50?'var(--amber)':'var(--rose)'}"></div></div>
+        <span style="color:${r.p>=75?'var(--teal)':r.p>=50?'var(--amber)':'var(--rose)'};font-weight:600">${r.p}%</span>
+      </div></td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+function reportBySubject(att){
+  const subjects=getSubjects();
+  return `<div class="table-wrap"><table>
+    <thead><tr><th>Subject</th><th>Code</th><th>Semester</th><th>Present</th><th>Absent</th><th>Attendance %</th></tr></thead>
+    <tbody>${subjects.map(s=>{
+      const sAtt=att.filter(a=>a.subjectId===s.id);
+      const present=sAtt.filter(a=>a.status==='present').length;
+      const total=sAtt.length||1;
+      const p=pct(present,total);
+      const sem=getSemesters().find(x=>x.id===s.semesterId);
+      return `<tr>
+        <td><strong>${s.name}</strong></td><td><span class="badge badge-sky">${s.code}</span></td>
+        <td>${sem?.name||'-'}</td>
+        <td class="text-teal fw-600">${present}</td>
+        <td class="text-rose fw-600">${total-present}</td>
+        <td><span style="color:${p>=75?'var(--teal)':p>=50?'var(--amber)':'var(--rose)'};font-weight:600">${p}%</span></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+function reportByStudent(att){
+  const students=getStudents();
+  return `<div class="table-wrap"><table>
+    <thead><tr><th>Student ID</th><th>Name</th><th>Semester</th><th>Present</th><th>Absent</th><th>Attendance %</th><th>Alert</th></tr></thead>
+    <tbody>${students.map(s=>{
+      const sAtt=att.filter(a=>a.studentId===s.id);
+      const present=sAtt.filter(a=>a.status==='present').length;
+      const subjects=getSubjects().filter(x=>x.semesterId===s.semesterId);
+      const total=Math.max(sAtt.length,subjects.length)||1;
+      const p=pct(present,total);
+      return `<tr>
+        <td><span class="badge badge-teal">${s.studentId}</span></td>
+        <td>${s.name}</td><td>${semName(s.semesterId)}</td>
+        <td class="text-teal fw-600">${present}</td>
+        <td class="text-rose fw-600">${total-present}</td>
+        <td><span style="color:${p>=75?'var(--teal)':p>=50?'var(--amber)':'var(--rose)'};font-weight:600">${p}%</span></td>
+        <td>${p<75?'<span class="badge badge-rose">⚠️ Low</span>':'<span class="badge badge-teal">✅ OK</span>'}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+function reportDaily(att){
+  const dates=[...new Set(att.map(a=>a.date))].sort().reverse().slice(0,30);
+  return `<div class="table-wrap"><table>
+    <thead><tr><th>Date</th><th>Day</th><th>Sessions</th><th>Students Present</th><th>Subjects Covered</th></tr></thead>
+    <tbody>${dates.map(d=>{
+      const dAtt=att.filter(a=>a.date===d);
+      const day=new Date(d).toLocaleDateString('en-MY',{weekday:'long'});
+      return `<tr>
+        <td>${fmt(d)}</td><td>${day}</td>
+        <td>${new Set(dAtt.map(a=>a.sessionId)).size}</td>
+        <td class="text-teal fw-600">${new Set(dAtt.map(a=>a.studentId)).size}</td>
+        <td>${new Set(dAtt.map(a=>a.subjectId)).size}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+function attachReportEvents(){setTimeout(loadReport,100)}
+function exportCSV(){
+  const att=getAttendance();
+  const rows=[['Student ID','Name','Subject','Semester','Program','Date','Time','Status']];
+  att.forEach(a=>{
+    const st=getStudents().find(s=>s.id===a.studentId);
+    rows.push([st?.studentId||'',st?.name||'',subName(a.subjectId),semName(a.semesterId),progName(a.programId),a.date,a.time,a.status]);
+  });
+  const csv=rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='attendance_report.csv';a.click();
+}
+
+// ════════════════════════════════════════════
+// TEACHER DASHBOARD
+// ════════════════════════════════════════════
+function pageTeacherDash(){
+  const att=getAttendance();
+  const mySubjects=getSubjects().slice(0,5);
+  const todayAtt=att.filter(a=>a.date===today());
+  return `
+  <div class="stats-grid">
+    <div class="stat-card teal"><div class="stat-icon">✅</div><div class="stat-val">${new Set(todayAtt.map(a=>a.studentId)).size}</div><div class="stat-label">Scanned Today</div></div>
+    <div class="stat-card sky"><div class="stat-icon">📷</div><div class="stat-val">${new Set(todayAtt.map(a=>a.subjectId)).size}</div><div class="stat-label">Sessions Today</div></div>
+    <div class="stat-card amber"><div class="stat-icon">📚</div><div class="stat-val">${getSubjects().length}</div><div class="stat-label">Total Subjects</div></div>
+    <div class="stat-card rose"><div class="stat-icon">👩‍🎓</div><div class="stat-val">${getStudents().length}</div><div class="stat-label">Total Students</div></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="card-title">📷 Quick Start — Take Attendance</div>
+    <button class="btn btn-primary btn-sm" onclick="navigate('scan')">Start Scanning →</button></div>
+    <p style="color:var(--muted);font-size:14px">Select a subject and start scanning QR ID cards to record attendance. The system will automatically prevent duplicate entries per subject per day.</p>
+  </div>
+  <div class="card mt-16">
+    <div class="card-header"><div class="card-title">📋 Today's Attendance Activity</div></div>
+    ${todayAtt.length?`<div class="table-wrap"><table>
+      <thead><tr><th>Student</th><th>Subject</th><th>Time</th><th>Status</th></tr></thead>
+      <tbody>${todayAtt.slice(-10).reverse().map(a=>{
+        const st=getStudents().find(s=>s.id===a.studentId);
+        return `<tr><td>${st?.name||'?'}</td><td>${subName(a.subjectId)}</td><td>${a.time}</td><td><span class="badge badge-teal">Present</span></td></tr>`;
+      }).join('')}</tbody>
+    </table></div>`:'<div class="empty-state"><div class="es-icon">📷</div><p>No attendance recorded today yet</p></div>'}
+  </div>`;
+}
+
+// ════════════════════════════════════════════
+// QR SCAN PAGE
+// ════════════════════════════════════════════
+let activeSession = null;
+let cameraStream = null;
+let scanInterval = null;
+
+function pageScan(){
+  const progs=getPrograms(),sems=getSemesters(),subjects=getSubjects();
+  const progOpts=progs.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  return `
+  <div class="grid-2" style="gap:20px;align-items:start">
+    <div>
+      <div class="card mb-16">
+        <div class="card-title" style="margin-bottom:14px">⚙️ Session Setup</div>
+        <div class="fg" style="margin-bottom:12px"><label>Program</label>
+          <select id="scanProg" onchange="updateScanSems()">${progOpts}</select>
+        </div>
+        <div class="fg" style="margin-bottom:12px"><label>Semester</label>
+          <select id="scanSem" onchange="updateScanSubjects()">
+            ${sems.filter(s=>s.programId===1).map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}
+          </select>
+        </div>
+        <div class="fg" style="margin-bottom:16px"><label>Subject</label>
+          <select id="scanSubj">
+            ${subjects.filter(s=>s.semesterId===1).map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}
+          </select>
+        </div>
+        <div class="flex gap-10">
+          <button class="btn btn-primary" onclick="startSession()" id="startBtn">▶ Start Session</button>
+          <button class="btn btn-danger" onclick="endSession()" id="endBtn" style="display:none">⏹ End Session</button>
+        </div>
+      </div>
+      <div id="sessionInfoDiv" style="display:none" class="session-info">
+        <div class="si-item"><div class="si-label">Program</div><div class="si-val" id="si_prog"></div></div>
+        <div class="si-item"><div class="si-label">Semester</div><div class="si-val" id="si_sem"></div></div>
+        <div class="si-item"><div class="si-label">Subject</div><div class="si-val" id="si_subj"></div></div>
+        <div class="si-item"><div class="si-label">Date</div><div class="si-val" id="si_date"></div></div>
+        <div class="si-item"><div class="si-label">Scanned</div><div class="si-val text-teal" id="si_count">0</div></div>
+      </div>
+    </div>
+    <div>
+      <div class="card mb-16">
+        <div class="card-title" style="margin-bottom:14px">📷 QR Code Scanner</div>
+        <div id="scanner-area">
+          <video id="qr-video" autoplay playsinline></video>
+          <div class="scan-overlay" id="scanOverlay" style="display:none">
+            <div class="scan-frame">
+              <div class="sf-tr"></div><div class="sf-bl"></div>
+              <div class="scan-line"></div>
+            </div>
+          </div>
+        </div>
+        <div id="scanResult" class="scan-result"></div>
+        <div style="margin-top:12px;font-size:12px;color:var(--muted);text-align:center" id="scanHint">Start a session to activate the camera</div>
+      </div>
+    </div>
+  </div>
+  <div class="card" id="sessionListCard" style="display:none">
+    <div class="card-header">
+      <div class="card-title">📋 Session Attendance List</div>
+      <div class="flex gap-10">
+        <span class="badge badge-teal" id="scanCount">0 students</span>
+        <button class="btn btn-outline btn-sm" onclick="manualMarkModal()">+ Manual Mark</button>
+      </div>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>#</th><th>Student ID</th><th>Name</th><th>Time</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody id="sessionAttList"></tbody>
+    </table></div>
+  </div>`;
+}
+
+function updateScanSems(){
+  const pid=parseInt(document.getElementById('scanProg').value);
+  const sems=getSemesters().filter(s=>s.programId===pid);
+  document.getElementById('scanSem').innerHTML=sems.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  updateScanSubjects();
+}
+function updateScanSubjects(){
+  const sid=parseInt(document.getElementById('scanSem').value);
+  const subjects=getSubjects().filter(s=>s.semesterId===sid);
+  document.getElementById('scanSubj').innerHTML=subjects.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+}
+
+function startSession(){
+  const progId=parseInt(document.getElementById('scanProg').value);
+  const semId=parseInt(document.getElementById('scanSem').value);
+  const subjId=parseInt(document.getElementById('scanSubj').value);
+  activeSession={progId,semId,subjId,sessionId:'SES'+Date.now(),records:[]};
+  document.getElementById('si_prog').textContent=progName(progId);
+  document.getElementById('si_sem').textContent=semName(semId);
+  document.getElementById('si_subj').textContent=subName(subjId);
+  document.getElementById('si_date').textContent=fmt(today());
+  document.getElementById('si_count').textContent='0';
+  document.getElementById('sessionInfoDiv').style.display='flex';
+  document.getElementById('startBtn').style.display='none';
+  document.getElementById('endBtn').style.display='inline-flex';
+  document.getElementById('sessionListCard').style.display='block';
+  document.getElementById('scanHint').textContent='Scanning active — point QR code at camera';
+  startCamera();
+}
+
+function endSession(){
+  stopCamera();
+  activeSession=null;
+  document.getElementById('sessionInfoDiv').style.display='none';
+  document.getElementById('startBtn').style.display='inline-flex';
+  document.getElementById('endBtn').style.display='none';
+  document.getElementById('sessionListCard').style.display='none';
+  document.getElementById('scanHint').textContent='Start a session to activate the camera';
+  document.getElementById('scanOverlay').style.display='none';
+  showScanResult('Session ended successfully. Attendance saved.','success');
+}
+
+function startCamera(){
+  const video=document.getElementById('qr-video');
+  document.getElementById('scanOverlay').style.display='flex';
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}).then(stream=>{
+    cameraStream=stream;video.srcObject=stream;video.play();
+    startQRDetection(video);
+  }).catch(()=>{
+    document.getElementById('scanHint').textContent='📷 Camera not available — use manual input below';
+    addManualScanInput();
+  });
+}
+function stopCamera(){
+  if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}
+  if(scanInterval){clearInterval(scanInterval);scanInterval=null;}
+}
+
+function startQRDetection(video){
+  // Using canvas-based QR detection via jsQR
+  const script=document.createElement('script');
+  script.src='https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js';
+  script.onload=()=>{
+    const canvas=document.createElement('canvas');
+    const ctx=canvas.getContext('2d');
+    scanInterval=setInterval(()=>{
+      if(!video.videoWidth||!activeSession) return;
+      canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+      ctx.drawImage(video,0,0);
+      const imgData=ctx.getImageData(0,0,canvas.width,canvas.height);
+      const code=jsQR(imgData.data,imgData.width,imgData.height);
+      if(code) processScannedQR(code.data);
+    },500);
+  };
+  document.head.appendChild(script);
+}
+
+let lastScan='';let lastScanTime=0;
+function processScannedQR(data){
+  const now=Date.now();
+  if(data===lastScan&&now-lastScanTime<3000) return;
+  lastScan=data;lastScanTime=now;
+  recordAttendanceFromQR(data);
+}
+
+function addManualScanInput(){
+  const area=document.getElementById('scanner-area');
+  if(document.getElementById('manualQRInput')) return;
+  area.innerHTML+=`<div style="margin-top:12px">
+    <div class="fg"><label>Manual Student ID Input</label>
+      <div class="flex gap-10">
+        <input id="manualQRInput" placeholder="Enter Student ID (e.g. CERT2024001)" style="flex:1">
+        <button class="btn btn-primary" onclick="manualScan()">✔ Record</button>
+      </div>
+    </div>
+  </div>`;
+}
+function manualScan(){
+  const val=document.getElementById('manualQRInput')?.value?.trim();
+  if(val){recordAttendanceFromQR(val);document.getElementById('manualQRInput').value='';}
+}
+
+function recordAttendanceFromQR(studentId){
+  if(!activeSession){showScanResult('No active session. Please start a session first.','error');return;}
+  const students=getStudents();
+  const student=students.find(s=>s.studentId===studentId);
+  if(!student){showScanResult(`❌ Student ID "${studentId}" not found in system.`,'error');return;}
+  if(student.semesterId!==activeSession.semId){
+    showScanResult(`❌ ${student.name} is enrolled in ${semName(student.semesterId)}, not the current semester.`,'error');return;
+  }
+  const att=getAttendance();
+  const dup=att.find(a=>a.studentId===student.id&&a.subjectId===activeSession.subjId&&a.date===today());
+  if(dup){showScanResult(`⚠️ Duplicate scan — ${student.name} already recorded for this subject today.`,'error');return;}
+  const rec={id:Date.now(),studentId:student.id,subjectId:activeSession.subjId,semesterId:activeSession.semId,programId:activeSession.progId,date:today(),time:timeNow(),status:'present',sessionId:activeSession.sessionId};
+  att.push(rec);DB.set('attendance',att);
+  activeSession.records.push(rec);
+  showScanResult(`✅ Attendance Approved — ${student.name} (${student.studentId})`,'success');
+  updateSessionList();
+  document.getElementById('si_count').textContent=activeSession.records.length;
+}
+
+function showScanResult(msg,type){
+  const el=document.getElementById('scanResult');
+  if(!el) return;
+  el.textContent=msg;el.className='scan-result '+type;el.style.display='block';
+  setTimeout(()=>{el.style.display='none';},4000);
+}
+
+function updateSessionList(){
+  if(!activeSession) return;
+  const tbody=document.getElementById('sessionAttList');
+  if(!tbody) return;
+  const count=document.getElementById('scanCount');
+  if(count) count.textContent=activeSession.records.length+' students';
+  tbody.innerHTML=activeSession.records.map((r,i)=>{
+    const st=getStudents().find(s=>s.id===r.studentId);
+    return `<tr>
+      <td>${i+1}</td>
+      <td><span class="badge badge-teal">${st?.studentId||''}</span></td>
+      <td><strong>${st?.name||'?'}</strong></td>
+      <td>${r.time}</td>
+      <td><span class="badge badge-teal">Present</span></td>
+      <td><button class="btn btn-danger btn-sm" onclick="removeFromSession(${r.id})">Remove</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function removeFromSession(recId){
+  const att=getAttendance().filter(a=>a.id!==recId);
+  DB.set('attendance',att);
+  if(activeSession) activeSession.records=activeSession.records.filter(r=>r.id!==recId);
+  updateSessionList();
+  document.getElementById('si_count').textContent=activeSession?.records?.length||0;
+}
+
+function manualMarkModal(){
+  if(!activeSession){alert('No active session.');return;}
+  const students=getStudents().filter(s=>s.semesterId===activeSession.semId);
+  openModal('Manual Mark Attendance',`
+    <div class="fg"><label>Select Student</label>
+      <select id="manualStudent">${students.map(s=>`<option value="${s.studentId}">${s.name} (${s.studentId})</option>`).join('')}</select>
+    </div>
+    <div class="fg" style="margin-top:12px"><label>Status</label>
+      <select id="manualStatus"><option value="present">Present</option><option value="absent">Absent</option></select>
+    </div>
+  `,[
+    {label:'Cancel',cls:'btn-outline',fn:closeModal},
+    {label:'Mark Attendance',cls:'btn-primary',fn:()=>{
+      const sid=document.getElementById('manualStudent').value;
+      const status=document.getElementById('manualStatus').value;
+      closeModal();
+      if(status==='present') recordAttendanceFromQR(sid);
+      else{
+        const student=getStudents().find(s=>s.studentId===sid);
+        if(!student||!activeSession) return;
+        const att=getAttendance();
+        const dup=att.find(a=>a.studentId===student.id&&a.subjectId===activeSession.subjId&&a.date===today());
+        if(!dup){
+          const rec={id:Date.now(),studentId:student.id,subjectId:activeSession.subjId,semesterId:activeSession.semId,programId:activeSession.progId,date:today(),time:timeNow(),status:'absent',sessionId:activeSession.sessionId};
+          att.push(rec);DB.set('attendance',att);
+          activeSession.records.push(rec);
+          updateSessionList();
+        }
+      }
+    }}
+  ]);
+}
+function attachScanEvents(){}
+
+// ════════════════════════════════════════════
+// MY SESSIONS & ATTENDANCE (TEACHER)
+// ════════════════════════════════════════════
+function pageMySessions(){
+  const att=getAttendance();
+  const sessions={};
+  att.forEach(a=>{
+    const k=a.sessionId;
+    if(!sessions[k]) sessions[k]={sessionId:k,subjectId:a.subjectId,semesterId:a.semesterId,date:a.date,count:0};
+    sessions[k].count++;
+  });
+  const rows=Object.values(sessions).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,30);
+  return `<div class="card">
+    <div class="card-header"><div class="card-title">📋 Recent Sessions</div></div>
+    ${rows.length?`<div class="table-wrap"><table>
+      <thead><tr><th>Session ID</th><th>Subject</th><th>Semester</th><th>Date</th><th>Students Present</th></tr></thead>
+      <tbody>${rows.map(r=>`<tr>
+        <td><span class="badge badge-sky">${r.sessionId}</span></td>
+        <td>${subName(r.subjectId)}</td><td>${semName(r.semesterId)}</td>
+        <td>${fmt(r.date)}</td><td class="text-teal fw-600">${r.count}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`:'<div class="empty-state"><div class="es-icon">📋</div><p>No sessions recorded yet</p></div>'}
+  </div>`;
+}
+
+function pageMyAttendance(){
+  const sems=getSemesters(),subjects=getSubjects();
+  return `<div class="card">
+    <div class="card-header flex flex-wrap gap-10">
+      <div class="card-title">📊 Attendance Overview</div>
+      <select id="myAttSem" class="fg" style="width:200px" onchange="updateMyAtt()">
+        <option value="">All Semesters</option>${sems.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}
+      </select>
+    </div>
+    <div id="myAttBody">${myAttTable(getAttendance())}</div>
+  </div>`;
+}
+function myAttTable(att){
+  const students=getStudents();
+  return `<div class="table-wrap"><table>
+    <thead><tr><th>Student</th><th>Semester</th><th>Subject</th><th>Date</th><th>Time</th><th>Status</th></tr></thead>
+    <tbody>${att.slice(-50).reverse().map(a=>{
+      const st=students.find(s=>s.id===a.studentId);
+      return `<tr>
+        <td>${st?.name||'?'}</td><td>${semName(a.semesterId)}</td>
+        <td>${subName(a.subjectId)}</td><td>${fmt(a.date)}</td><td>${a.time}</td>
+        <td><span class="badge ${a.status==='present'?'badge-teal':'badge-rose'}">${a.status}</span></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+function updateMyAtt(){
+  const sf=parseInt(document.getElementById('myAttSem').value)||0;
+  let att=getAttendance();
+  if(sf) att=att.filter(a=>a.semesterId===sf);
+  document.getElementById('myAttBody').innerHTML=myAttTable(att);
+}
+
+// ════════════════════════════════════════════
+// MODAL SYSTEM
+// ════════════════════════════════════════════
+function openModal(title,body,buttons){
+  document.getElementById('modalTitle').textContent=title;
+  document.getElementById('modalBody').innerHTML=body;
+  const footer=document.getElementById('modalFooter');
+  footer.innerHTML=buttons.map(b=>`<button class="btn ${b.cls}" id="mbtn_${b.label.replace(/\s/g,'')}">${b.label}</button>`).join('');
+  buttons.forEach(b=>{
+    const el=document.getElementById('mbtn_'+b.label.replace(/\s/g,''));
+    if(el) el.onclick=b.fn;
+  });
+  document.getElementById('modalBackdrop').classList.add('open');
+}
+function closeModal(e){
+  if(!e||e.target===document.getElementById('modalBackdrop'))
+    document.getElementById('modalBackdrop').classList.remove('open');
+}
+
+// ════════════════════════════════════════════
+// BOOT
+// ════════════════════════════════════════════
+seedData();
+</script>
+</body>
+</html>
